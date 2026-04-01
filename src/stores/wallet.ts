@@ -51,6 +51,7 @@ type WalletState = {
     getProvider: () => ethers.JsonRpcProvider | null;
     addToken: (token: Token) => void;
     addNetwork: (network: Network) => void;
+    switchNetwork: (networkId: string) => void;
     verifyPassword: (password: string) => boolean;
     decryptMnemonic: () => string | null;
 };
@@ -396,6 +397,14 @@ export const useWalletStore = create<WalletState>()(
                 set(state => ({
                     networks: [...state.networks, network]
                 }));
+            },
+
+            switchNetwork: (networkId: string) => {
+                const state = get();
+                const network = state.networks.find(net => net.id === networkId);
+                if (network) {
+                    set({ currentNetwork: network });
+                }
             },
             getProvider: () => {
                 const state = get();
