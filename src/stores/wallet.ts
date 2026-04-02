@@ -234,15 +234,17 @@ export const useWalletStore = create<WalletState>()(
                 if (!mnemonic || !enPassword || !enRes) {
                     throw new Error('No wallet found');
                 }
-                const indexStr: string = (accounts[accounts.length - 1]?.index + 1).toString();
+                const lastIndex: number = Number(accounts[accounts.length - 1]?.index); // 1
+                const indexStr: string = (lastIndex + 1).toString(); // 2
 
                 const decryptedMnemonic = AES.decrypt(mnemonic, enPassword)
                 const decrypted = decryptedMnemonic.toString(enc.Utf8);
-                const derivationPath = "m/44'/60'/1'/0/0";
+                const derivationPath = `m/44'/60'/${indexStr}'/0/0`;
                 const nextWallet = HDNodeWallet.fromPhrase(decrypted, "", derivationPath);
+                console.log('--nextWallet', nextWallet)
 
                 const encryptedPrivateKey = AES.encrypt(nextWallet.privateKey, enPassword).toString();
-                const newName = name ? name + indexStr : `Account ${Number(indexStr) + 1}`;
+                const newName = name ? name + indexStr : `Account ${indexStr}`;
                 const account: WalletAccount = {
                     address: nextWallet.address,
                     privateKey: encryptedPrivateKey,

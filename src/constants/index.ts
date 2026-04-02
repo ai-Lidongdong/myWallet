@@ -4,6 +4,8 @@ export const WALLET_CONNECT = 'WALLET_CONNECT'  //钱包连接
 export const WALLET_GET_ACCOUNT = 'WALLET_GET_ACCOUNT'  //获取钱包账户
 export const WALLET_SIGN_MESSAGE = 'WALLET_SIGN_MESSAGE'    //钱包消息签名
 export const WALLET_DISCONNECT = 'WALLET_DISCONNECT'    // 钱包断开连接
+/** 统一 EIP-1193 JSON-RPC：{ method, params }，由 background 分发 */
+export const WALLET_JSON_RPC = 'WALLET_JSON_RPC'
 export interface Network {
   id: string;
   name: string;

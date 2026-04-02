@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { AES, enc } from 'crypto-js';
+import { Wallet } from 'ethers';
+import { saveAs } from 'file-saver';
 import { PasswordModal } from '../components/PasswordModal';
 import { useWalletStore } from '../stores/wallet';
 
@@ -75,15 +78,47 @@ function DetailRow({
   return <div className={rowClass}>{inner}</div>;
 }
 
+type PasswordModalMode = 'privateKey' | 'exportWallet';
+
 export default function AccountDetailPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const address = searchParams.get('address') ?? '';
-  const [privateKeyModalOpen, setPrivateKeyModalOpen] = useState(false);
+  const [passwordModalMode, setPasswordModalMode] = useState<PasswordModalMode | null>(null);
 
   const account = useWalletStore((s) => s.getAccountByAddress(address));
   const verifyPassword = useWalletStore((s) => s.verifyPassword);
+  const walletPassword = useWalletStore((s) => s.password);
   const displayName = account?.name ?? 'Account';
+
+  const handleExport = useCallback(
+    async (plainPassword: string) => {
+      if (!account?.privateKey || !walletPassword) {
+        alert('无法导出，请确认钱包已解锁');
+        return;
+      }
+      try {
+        const bytes = AES.decrypt(account.privateKey, walletPassword);
+        const pk = bytes.toString(enc.Utf8);
+        if (!pk) {
+          alert('解密失败');
+          return;
+        }
+        const wallet = new Wallet(pk);
+        const json = await wallet.encrypt(plainPassword);
+        const blob = new Blob([json], { type: 'application/json' });
+        saveAs(blob, `keystore-${account.address}.json`);
+        alert('导出成功！请妥善保管文件和密码');
+      } catch {
+        alert('导出失败');
+      }
+    },
+    [account, walletPassword]
+  );
+
+  const passwordModalOpen = passwordModalMode !== null;
+  const passwordModalTitle =
+    passwordModalMode === 'exportWallet' ? '确认导出账户' : '验证密码以查看私钥';
 
   return (
     <div className="w-[360px] min-h-[540px] bg-[#f9f9f9] text-black">
@@ -112,30 +147,39 @@ export default function AccountDetailPage() {
           <DetailRow label="Account name" value={displayName} />
           <DetailRow label="Networks" value="10 addresses" />
           <DetailRow
-            label="Private keys"
+            label="展示秘钥"
             value="Unlock to reveal"
-            onRowClick={() => setPrivateKeyModalOpen(true)}
+            onRowClick={() => setPasswordModalMode('privateKey')}
           />
           <DetailRow label="Smart Account" value="Set up" />
         </div>
 
         <div className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/[0.04]">
-          <DetailRow label="Wallet" value="Wallet 1" />
+          <DetailRow
+            label="导出账户为 JSON 文件"
+            value=""
+            onRowClick={() => setPasswordModalMode('exportWallet')}
+          />
           <DetailRow label="Secret Recovery Phrase" value="Reveal" />
         </div>
       </div>
 
       <PasswordModal
-        open={privateKeyModalOpen}
-        title="验证密码以查看私钥"
-        onClose={() => setPrivateKeyModalOpen(false)}
+        open={passwordModalOpen}
+        title={passwordModalTitle}
+        onClose={() => setPasswordModalMode(null)}
         onConfirm={async (password) => {
           if (!verifyPassword(password)) {
             alert('密码错误');
             return;
           }
-          setPrivateKeyModalOpen(false);
-          navigate(`/private-key?address=${encodeURIComponent(address)}`);
+          const mode = passwordModalMode;
+          setPasswordModalMode(null);
+          if (mode === 'privateKey') {
+            navigate(`/private-key?address=${encodeURIComponent(address)}`);
+          } else if (mode === 'exportWallet') {
+            await handleExport(password);
+          }
         }}
       />
     </div>
