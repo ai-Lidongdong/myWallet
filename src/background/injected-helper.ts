@@ -1,4 +1,4 @@
-const WALLET_JSON_RPC = 'WALLET_JSON_RPC';
+
 
 /**
  * 注入到页面 MAIN world，必须保持自包含（executeScript 序列化时不带外部 import）
@@ -36,13 +36,15 @@ export default function injectMyWallet() {
     isMyWallet: true,
 
     request: async function (req: { method: string; params?: unknown[] }) {
+      console.log('----request 被调用', req)
       const method = req.method;
       const params = req.params ?? [];
       return new Promise((resolve, reject) => {
         const requestId = generateRequestId();
+        console.log('-哈哈')
         window.postMessage(
           {
-            type: WALLET_JSON_RPC,
+            type: "WALLET_JSON_RPC",
             requestId,
             from: 'injected-helper',
             method,
@@ -50,6 +52,8 @@ export default function injectMyWallet() {
           },
           '*'
         );
+        console.log('22')
+
 
         const handleResponse = (event: MessageEvent) => {
           if (!_isValidResponse(event, requestId)) return;

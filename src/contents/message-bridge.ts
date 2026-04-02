@@ -1,10 +1,10 @@
+import { WALLET_JSON_RPC } from '../constants';
 /**
  * 桥接脚本
  *
  * 网页(injected-helper)消息 => 桥接(message-bridge)转发 => background =>
  * 桥接将处理的信息转给网页
  */
-import { WALLET_JSON_RPC } from '../constants';
 
 window.addEventListener('message', (event) => {
   console.log('收到injected-helper的消息：', event);

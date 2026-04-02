@@ -12,7 +12,6 @@ export interface WalletAccount {
     index: number;
 }
 
-
 type WalletState = {
     networks: any;
     encryptWallet: any;
@@ -421,6 +420,8 @@ export const useWalletStore = create<WalletState>()(
                 })
             },
             connect: async (): Promise<WalletAccount> => {
+                const state = get();
+                console.log('state', state);
                 const { isLocked, encryptWallet, currentAccount } = get();
                 if (!encryptWallet) {   // 没有钱包账户
                     throw new Error('请先在插件中导入账户');

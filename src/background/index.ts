@@ -13,6 +13,7 @@ const initWallet = () =>{
 const setupScriptInjection = () => {
   // 当页面加载完成时注入
   chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    console.log('开始注入-myWallet')
     if (changeInfo.status !== "complete") return
     const tryInject = (url: string | undefined) => {
       if (!url || url.startsWith("chrome://")) return
@@ -50,6 +51,7 @@ const setupScriptInjection = () => {
   chrome.tabs.onActivated.addListener((e) => {
     chrome.tabs.get(e.tabId, (tab) => {
       if (tab.url && !tab.url.startsWith('chrome://')) {
+    console.log('开始注入-myWallet')
         chrome.scripting.executeScript({
           target: { tabId: e.tabId },
           world: "MAIN",
