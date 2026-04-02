@@ -7,11 +7,10 @@ import { Link } from "react-router-dom";
 import { fetchPut } from '../axios';
 
 const DashboardPage = () => {
-  const [networks, setNetworks] = React.useState<NetworkItem[]>([]);
   const [showChainSheet, setShowChainSheet] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
 
-  const { currentAccount, chainId } = useWalletStore();
+  const { currentAccount, chainId, networks } = useWalletStore();
   const walletName = '默认钱包';
 
   const copyToClipboard = async () => {
