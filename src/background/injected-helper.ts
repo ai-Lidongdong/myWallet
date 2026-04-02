@@ -17,42 +17,18 @@ export default function injectMyWallet() {
     // 连接钱包
     connect: async () => {
       console.log('connect');
-      
       return new Promise((resolve, reject) => {
-        console.log('发送信息到 message-bridge');
-        
         const requestId = generateRequestId()
-        console.log('requestId :', requestId);
-        console.log("aaaaaa");
-        
-        console.log(WALLET_CONNECT);
-        
-        
-        
         // 向桥接发送连接请求
         const message = {
           type: WALLET_CONNECT,
           requestId,
           from : 'injected-helper'
         }
-        // window.postMessage(message, '*')
-        console.log(message);
-        console.log(window.location.origin);
-        
-        
         window.postMessage(message, "*")
 
         // 监听连接结果
-        const handleResponse = (event: MessageEvent) => {
-          console.log("handleResponse:", event);
-          
-          // if (
-          //   event.source !== window || 
-          //   !event.data || 
-          //   event.data.from !== 'injected-helper' || 
-          //   event.data.requestId !== requestId) {
-          //   return
-          // }
+        const handleResponse = (event: MessageEvent) => {        
           if (!_isValidResponse(event, requestId)) return
           //  清除监听
           window.removeEventListener('message', handleResponse)
@@ -82,15 +58,7 @@ export default function injectMyWallet() {
           from : 'injected-helper'
         }
         window.postMessage(message, "*")
-
         const handleResponse = (event: MessageEvent) => {
-          // if (
-          //   event.source !== window || 
-          //   !event.data || 
-          //   event.data.from !== 'injected-helper' || 
-          //   event.data.requestId !== requestId) {
-          //   return
-          // }
           if (!_isValidResponse(event, requestId)) return
           window.removeEventListener('message', handleResponse)
 

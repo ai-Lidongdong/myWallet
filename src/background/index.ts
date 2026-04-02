@@ -4,92 +4,8 @@ import * as constant from "../constants";
 
 let walletStore;
 const initWallet = () =>{
+  console.log('background 初始化钱包状态');
   walletStore = useWalletStore.getState()
-  console.log('🔄 初始化钱包状态完成'); 
-}
-console.log('哈哈哈1')
-
-// 注册消息监听器
-const setupMessageListener = () => {
-  console.log('🔄 监听来自 message-bridge 的消息');
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log("background 收到消息:", message.type, "来自标签页：", sender.tab?.id);
-    // 处理连接请求
-    if (message.type === constant.WALLET_CONNECT) {
-      try {
-        walletStore.connect().then(() => {
-          const account = walletStore.currentAccount
-          sendResponse({
-            data: { account }
-          })
-        }).catch((error) => {
-          sendResponse({
-            data: { error: error.message },
-          })
-        })
-      } catch (error) {
-        sendResponse({
-          data: { error: error instanceof Error ? error.message : '连接失败' },
-        })
-      }
-      return true
-    }
-
-    // 获取账号请求
-    if (message.type === constant.WALLET_GET_ACCOUNT) {
-      const walletStore = useWalletStore.getState()
-      const account = walletStore.currentAccount
-      sendResponse({
-        data: { account }
-      })
-      return true
-    }
-    
-    // 处理签名
-    if (message.type === constant.WALLET_SIGN_MESSAGE) {
-      if (!message.data || !message.data.message) {
-        sendResponse({
-          data: { error: '缺少签名信息' },
-        })
-        return true 
-      }
-      const walletStore = useWalletStore.getState()
-      try {
-        walletStore.signMessage(message.data.message)
-        .then((signedMessage) => {
-          sendResponse({
-            data: { signedMessage }
-          })
-        })
-        .catch((error) => {
-          sendResponse({
-            data: { error: error.message },
-          })
-        })
-      } catch (error) {
-        sendResponse({
-          data: { error: error instanceof Error ? error.message : '签名失败' },
-        })
-      }
-      return true
-    }
-
-    // 处理断开连接
-    if (message.type === constant.WALLET_DISCONNECT) {
-      const walletStore = useWalletStore.getState()
-      walletStore.disconnect()
-      sendResponse({
-        data: { success: true }
-      })
-      return true
-    }
-
-    // 未知类型消息
-    sendResponse({
-      data: { error: '未知消息类型' },
-    })
-    return true
-  })
 }
 
 // 注入钱包脚本到页面
@@ -152,10 +68,94 @@ const setupScriptInjection = () => {
   })
 }
 
+// 注册消息监听器
+const setupMessageListener = () => {
+  console.log('background监听来自message-bridge 的消息已注册');
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    console.log("background 收到消息:", message.type, "数据信息", message);
+    // 处理连接请求
+    if (message.type === constant.WALLET_CONNECT) {
+      const walletStore = useWalletStore.getState()
+      try {
+        walletStore.connect().then((account) => {
+          console.log('222', account);
+          sendResponse({
+            data: { account }
+          })
+        }).catch((error) => {
+          sendResponse({
+            data: { error: error.message },
+          })
+        })
+      } catch (error) {
+        sendResponse({
+          data: { error: error instanceof Error ? error.message : '连接失败' },
+        })
+      }
+      return true
+    }
+
+    // 获取账号请求
+    if (message.type === constant.WALLET_GET_ACCOUNT) {
+      const walletStore = useWalletStore.getState()
+      const account = walletStore.currentAccount
+      sendResponse({
+        data: { account }
+      })
+      return true
+    }
+  
+    // 处理签名
+    if (message.type === constant.WALLET_SIGN_MESSAGE) {
+      if (!message.data || !message.data.message) {
+        sendResponse({
+          data: { error: '缺少签名信息' },
+        })
+        return true 
+      }
+      const walletStore = useWalletStore.getState()
+      try {
+        walletStore.signMessage(message.data.message)
+        .then((signedMessage) => {
+          sendResponse({
+            data: { signedMessage }
+          })
+        })
+        .catch((error) => {
+          sendResponse({
+            data: { error: error.message },
+          })
+        })
+      } catch (error) {
+        sendResponse({
+          data: { error: error instanceof Error ? error.message : '签名失败' },
+        })
+      }
+      return true
+    }
+
+    // 处理断开连接
+    if (message.type === constant.WALLET_DISCONNECT) {
+      const walletStore = useWalletStore.getState()
+      walletStore.disconnect()
+      sendResponse({
+        data: { success: true }
+      })
+      return true
+    }
+
+    // 未知类型消息
+    sendResponse({
+      data: { error: '未知消息类型' },
+    })
+    return true
+  })
+}
+
 
 initWallet()
-setupMessageListener()
 setupScriptInjection()
+setupMessageListener()
 // 监听扩展安装事件
 chrome.runtime.onInstalled.addListener((details) => {
   console.log('🔄 扩展安装事件:', details.reason);

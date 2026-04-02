@@ -215,7 +215,6 @@ export const useWalletStore = create<WalletState>()(
                 })
                 const encryptWallet = AES.encrypt(walletListStr, enPassword).toString();
                 set({
-                    isConnected: true,
                     isLocked: false,
                     accounts: accounts,
                     otherAccounts: [],
@@ -340,7 +339,6 @@ export const useWalletStore = create<WalletState>()(
             lockWallet: () => {
                 set({
                     mnemonic: null,
-                    isConnected: false,
                     isLocked: true,
                     currentAccount: null,
                     accounts: [],
@@ -363,7 +361,6 @@ export const useWalletStore = create<WalletState>()(
                     otherAccounts: loadedOther = [],
                 } = decryptWallet
                 set({
-                    isConnected: true,
                     isLocked: false,
                     currentAccount: accounts[0],
                     accounts,
@@ -422,46 +419,34 @@ export const useWalletStore = create<WalletState>()(
                 })
             },
             connect: async (): Promise<WalletAccount> => {
-                const state = await new Promise<WalletState | null>((resolve) => {
-                    chrome.storage.local.get('wallet-store', (result) => {
-                        console.log('钱包信息:', result['wallet-store']);
-                        resolve(result['wallet-store']?.state || null);
-                    });
-                });
-
-                if (!state || !state.encryptWallet) {   // 没有钱包账户
+                const { isLocked, encryptWallet, currentAccount } = get();
+                if (!encryptWallet) {   // 没有钱包账户
                     throw new Error('请先在插件中导入账户');
                 }
-                if (state.isLocked && !state.currentAccount && state.encryptWallet) { // 有账户但被锁定
+                if (isLocked && !currentAccount && encryptWallet) { // 有账户但被锁定
                     throw new Error('请先解锁钱包账户');
                 }
-                // 有已在登录账户
-                const account = state.currentAccount as WalletAccount;
                 set({
-                    currentAccount: account,
                     isConnected: true
                 });
 
-                return account;
+                return currentAccount;
             },
             disconnect: () => {
                 set({
-                    currentAccount: null,
                     isConnected: false
                 })
             },
 
             signMessage: async (message) => {
-                const { state } = JSON.parse(localStorage.getItem("wallet-store"))
-                console.log('钱包信息:', state);
-                const account = state.currentAccount
-                if (!account) {
+                const { isConnected, currentAccount, password } = get();
+                if (!currentAccount || !isConnected) {
                     throw new Error('未连接钱包')
                 }
-                const bytes = AES.decrypt(account.privateKey, state.password);
+                const bytes = AES.decrypt(currentAccount.privateKey, password);
                 const privateKey = bytes.toString(enc.Utf8)
 
-                const wallet = new ethers.Wallet(privateKey)
+                const wallet = new Wallet(privateKey)
                 return wallet.signMessage(message)
             },
             verifyPassword: (password: string) => {
